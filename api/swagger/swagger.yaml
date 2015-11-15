@@ -1,0 +1,137 @@
+swagger: "2.0"
+info:
+  version: "0.0.1"
+  title: URL Shortener
+# during dev, should point to your local machine
+host: localhost:10010
+# basePath prefixes all resource paths
+basePath: /
+#
+schemes:
+  # tip: remove http to make production-grade
+  - http
+  - https
+# format of bodies a client can send (Content-Type)
+consumes:
+  - application/json
+# format of the responses to the client (Accepts)
+produces:
+  - application/json
+paths:
+  /url:
+    # binds a127 app logic to a route
+    x-swagger-router-controller: url
+    post:
+      description: Creates shortened url from given url.
+      parameters:
+        - name: url
+          in: body
+          description: The long version of the url to shorten.
+          required: true
+          schema:
+            $ref: "#/definitions/Url"
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: "#/definitions/Url"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/Error"
+  /url/{id}:
+    x-swagger-router-controller: url
+    get:
+      description: Returns URL object with its properties
+      parameters:
+        - name: id
+          in: path
+          description: The identifier of the url.
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Url"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/Error"
+    patch:
+      description: Modifies the url resource with the given sequence of instructions.
+      parameters:
+        - name: id
+          in: path
+          description: Shortened ID of the url to modify.
+          required: true
+          type: string
+        - name: instructions
+          in: body
+          required: true
+          description: Array of PATCH instructions. See RFC 6902
+          schema:
+            type: array
+            $ref: "#/definitions/PatchDocument"
+      responses:
+        "207":
+          description: Multi-Status
+          schema:
+            $ref: "#/definitions/MultiStatusResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/Error"
+  /swagger:
+    x-swagger-pipe: swagger_raw
+# complex objects have schema definitions
+definitions:
+  Url:
+    required:
+      - url
+    properties:
+      id:
+        type: string
+        description: The identifier of the url.
+      url:
+        type: string
+        description: Original long url.
+      visits:
+        type: integer
+        format: int32
+        description: The number of visits to the shortened url.
+  PatchDocument:
+    description: A JSONPatch document as defined by RFC 6902
+    required:
+     - "op"
+     - "path"
+    properties:
+      op:
+        type: string
+        description: The operation to be performed
+        enum:
+         - "add"
+         - "remove"
+         - "replace"
+         - "move"
+         - "copy"
+         - "test"
+      path:
+        type: string
+        description: A JSON-Pointer
+      value:
+        description: The value to be used within the operations.
+      from:
+        type: string
+        description: A string containing a JSON Pointer value.
+  MultiStatusResponse:
+    description: A response containing a sequence of response codes in order of the request's bulk instructions.
+    type: array
+    items:
+      type: string
+  Error:
+    required:
+      - message
+    properties:
+      message:
+        type: string
